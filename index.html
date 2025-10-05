@@ -1578,20 +1578,28 @@ window.onload = () => {
 <!-- Firebase Firestore -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
-    <script>
-        // ================= Firebase Config =================
-        const firebaseConfig = {
-            apiKey: "API_KEY_HERE",
-            authDomain: "PROJECT_ID.firebaseapp.com",
-            projectId: "PROJECT_ID",
-            storageBucket: "PROJECT_ID.appspot.com",
-            messagingSenderId: "SENDER_ID",
-            appId: "APP_ID"
-        };
-        firebase.initializeApp(firebaseConfig);
+<script type="module">
+  // Import the functions you need from the SDKs you need
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
+  import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-analytics.js";
+  // TODO: Add SDKs for Firebase products that you want to use
+  // https://firebase.google.com/docs/web/setup#available-libraries
 
-        const auth = firebase.auth();
-        const db = firebase.firestore();
+  // Your web app's Firebase configuration
+  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+  const firebaseConfig = {
+    apiKey: "AIzaSyC00c9EBgKEczZTsglTumoYNkCdoOeP3-Q",
+    authDomain: "shaoshaomsu-cbed7.firebaseapp.com",
+    projectId: "shaoshaomsu-cbed7",
+    storageBucket: "shaoshaomsu-cbed7.firebasestorage.app",
+    messagingSenderId: "720038869211",
+    appId: "1:720038869211:web:bbee347989f43806c734fe",
+    measurementId: "G-HH100KEB9J"
+  };
+
+  // Initialize Firebase
+  const app = initializeApp(firebaseConfig);
+  const analytics = getAnalytics(app);
 
         // ================= Register =================
         document.getElementById("register-btn").addEventListener("click", async () => {

@@ -1502,7 +1502,6 @@ window.onload = () => {
 };
 
 </script>
-
 <!-- Firebase App (core) -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
 <!-- Firebase Auth -->
@@ -1510,15 +1509,8 @@ window.onload = () => {
 <!-- Firebase Firestore -->
 <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
-<script type="module">
-  // Import the functions you need from the SDKs you need
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-app.js";
-  import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.3.0/firebase-analytics.js";
-  // TODO: Add SDKs for Firebase products that you want to use
-  // https://firebase.google.com/docs/web/setup#available-libraries
-
-  // Your web app's Firebase configuration
-  // For Firebase JS SDK v7.20.0 and later, measurementId is optional
+<script>
+  // ====== Firebase Configuration ======
   const firebaseConfig = {
     apiKey: "AIzaSyC00c9EBgKEczZTsglTumoYNkCdoOeP3-Q",
     authDomain: "shaoshaomsu-cbed7.firebaseapp.com",
@@ -1529,204 +1521,122 @@ window.onload = () => {
     measurementId: "G-HH100KEB9J"
   };
 
-  // Initialize Firebase
-  const app = initializeApp(firebaseConfig);
-  const analytics = getAnalytics(app);
+  // ====== Initialize Firebase ======
+  const app = firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db = firebase.firestore();
 
-        // ================= Register =================
-        document.getElementById("register-btn").addEventListener("click", async () => {
-            const email = document.getElementById("reg-email").value;
-            const password = document.getElementById("reg-password").value;
-            const username = document.getElementById("reg-username").value;
+  let currentUser = null;
 
-            try {
-                const userCredential = await auth.createUserWithEmailAndPassword(email, password);
-                const uid = userCredential.user.uid;
+  // ====== Register ======
+  document.getElementById("register-btn").addEventListener("click", async () => {
+    const email = document.getElementById("reg-email").value;
+    const password = document.getElementById("reg-password").value;
+    const username = document.getElementById("reg-username").value;
 
-                await db.collection("users").doc(uid).set({
-                    username: username,
-                    email: email,
-                    createdAt: new Date()
-                });
-                alert("สมัครสมาชิกสำเร็จ");
-            } catch (error) {
-                alert(error.message);
-            }
-        });
+    try {
+      const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+      const uid = userCredential.user.uid;
 
-        // ================= Login =================
-        let currentUser = null;
-        document.getElementById("login-btn").addEventListener("click", async () => {
-            const email = document.getElementById("login-email").value;
-            const password = document.getElementById("login-password").value;
+      await db.collection("users").doc(uid).set({
+        username,
+        email,
+        createdAt: new Date()
+      });
 
-            try {
-                const userCredential = await auth.signInWithEmailAndPassword(email, password);
-                currentUser = userCredential.user;
-                alert("เข้าสู่ระบบสำเร็จ: " + currentUser.email);
-                showTransactions();
-            } catch (error) {
-                alert(error.message);
-            }
-        });
-
-        // ================= Transaction =================
-        document.getElementById("add-tx-btn").addEventListener("click", async () => {
-            if (!currentUser) {
-                alert("กรุณาเข้าสู่ระบบก่อน");
-                return;
-            }
-
-            const type = document.getElementById("tx-type").value;
-            const amount = document.getElementById("tx-amount").value;
-
-            try {
-                await db.collection("transactions").add({
-                    uid: currentUser.uid,
-                    type: type,
-                    amount: amount,
-                    date: new Date()
-                });
-                alert("เพิ่มธุรกรรมเรียบร้อย");
-                showTransactions();
-            } catch (error) {
-                alert(error.message);
-            }
-        });
-
-        async function showTransactions() {
-            if (!currentUser) return;
-            const snapshot = await db.collection("transactions")
-                                     .where("uid", "==", currentUser.uid)
-                                     .orderBy("date", "desc")
-                                     .get();
-            const txData = document.getElementById("txData");
-            txData.innerHTML = "";
-            if (snapshot.empty) {
-                txData.innerHTML = "ไม่มีข้อมูลธุรกรรม";
-                return;
-            }
-            snapshot.forEach(doc => {
-                const data = doc.data();
-                txData.innerHTML += `
-                    <p>ประเภท: ${data.type}</p>
-                    <p>จำนวน: ${data.amount}</p>
-                    <p>วันที่: ${data.date.toDate()}</p>
-                    <hr>
-                `;
-            });
-        }
-    </script>
-
-<script>
-// อ้างอิงปุ่มและส่วนของ UI
-const authBtn = document.getElementById("authBtn"); // ปุ่ม login/register
-const txSection = document.getElementById("transactionSection"); // ส่วน transaction
-const modal = document.getElementById("authModal"); // modal login/register
-
-// ฟังก์ชันตรวจสอบผู้ใช้ล็อกอิน
-function checkUserLogin() {
-    let currentUser = JSON.parse(localStorage.getItem("currentUser") || "null");
-    if(currentUser){
-        authBtn.style.display = "none"; // ซ่อนปุ่ม login/register
-        txSection.style.display = "block"; // แสดง transaction
-        showTransaction(currentUser.email); // แสดงธุรกรรมของผู้ใช้
-        let profileIcon = document.getElementById("headerProfileIcon");
-        if(profileIcon) profileIcon.title = currentUser.username; // แสดงชื่อผู้ใช้
-    } else {
-        authBtn.style.display = "inline-block";
-        txSection.style.display = "none";
+      alert("สมัครสมาชิกสำเร็จ");
+      currentUser = userCredential.user;
+      showTransactions();
+    } catch (error) {
+      alert(error.message);
     }
-}
+  });
 
-// เรียกตอนโหลดเพจ
-checkUserLogin();
+  // ====== Login ======
+  document.getElementById("login-btn").addEventListener("click", async () => {
+    const email = document.getElementById("login-email").value;
+    const password = document.getElementById("login-password").value;
 
-// ฟังก์ชัน Login
-document.getElementById("login-btn").addEventListener("click", () => {
-    let email = document.getElementById("login-Email").value;
-    let password = document.getElementById("login-password").value;
-
-    let users = JSON.parse(localStorage.getItem("users") || "[]");
-    let user = users.find(u => u.email === email && u.password === password);
-
-    if(user){
-        localStorage.setItem("currentUser", JSON.stringify(user));
-        alert("เข้าสู่ระบบเรียบร้อย!");
-        modal.style.display = "none";
-        checkUserLogin(); // อัปเดต UI
-    } else {
-        alert("อีเมลหรือรหัสผ่านไม่ถูกต้อง");
+    try {
+      const userCredential = await auth.signInWithEmailAndPassword(email, password);
+      currentUser = userCredential.user;
+      alert("เข้าสู่ระบบสำเร็จ: " + currentUser.email);
+      showTransactions();
+    } catch (error) {
+      alert(error.message);
     }
-});
+  });
 
-// ฟังก์ชัน Register
-document.getElementById("register-btn").addEventListener("click", () => {
-    let username = document.getElementById("reg-username").value;
-    let email = document.getElementById("reg-email").value;
-    let phone = document.getElementById("reg-phone").value;
-    let password = document.getElementById("reg-password").value;
-
-    let users = JSON.parse(localStorage.getItem("users") || "[]");
-
-    if(users.some(u => u.email === email)){
-        alert("อีเมลนี้มีผู้ใช้งานแล้ว");
-        return;
+  // ====== Add Transaction ======
+  document.getElementById("add-tx-btn").addEventListener("click", async () => {
+    if (!currentUser) {
+      alert("กรุณาเข้าสู่ระบบก่อน");
+      return;
     }
 
-    let newUser = { username, email, phone, password };
-    users.push(newUser);
-    localStorage.setItem("users", JSON.stringify(users));
-    localStorage.setItem("currentUser", JSON.stringify(newUser));
-    alert("สมัครสมาชิกเรียบร้อย!");
-    modal.style.display = "none";
-    checkUserLogin(); // อัปเดต UI
-});
+    const type = document.getElementById("tx-type").value;
+    const amount = parseFloat(document.getElementById("tx-amount").value);
 
-// ฟังก์ชันเพิ่มธุรกรรม
-function saveTransaction(email, tx){
-    let allTx = JSON.parse(localStorage.getItem("transactions") || "{}");
-    if(!allTx[email]) allTx[email] = [];
-    allTx[email].push(tx);
-    localStorage.setItem("transactions", JSON.stringify(allTx));
-}
+    try {
+      await db.collection("transactions").add({
+        uid: currentUser.uid,
+        type,
+        amount,
+        date: new Date()
+      });
+      alert("เพิ่มธุรกรรมเรียบร้อย");
+      showTransactions();
+    } catch (error) {
+      alert(error.message);
+    }
+  });
 
-// แสดงธุรกรรมของผู้ใช้
-function showTransaction(email){
-    let txList = document.getElementById("txList");
-    txList.innerHTML = "";
-    let allTx = JSON.parse(localStorage.getItem("transactions") || "{}");
-    let userTx = allTx[email] || [];
-    userTx.forEach(t => {
-        let li = document.createElement("li");
-        li.textContent = `${t.date} - ${t.type} - ${t.amount} บาท`;
-        txList.appendChild(li);
+  // ====== Show Transactions ======
+  async function showTransactions() {
+    if (!currentUser) return;
+
+    const snapshot = await db.collection("transactions")
+      .where("uid", "==", currentUser.uid)
+      .orderBy("date", "desc")
+      .get();
+
+    const txData = document.getElementById("txData");
+    txData.innerHTML = "";
+
+    if (snapshot.empty) {
+      txData.innerHTML = "ไม่มีข้อมูลธุรกรรม";
+      return;
+    }
+
+    snapshot.forEach(doc => {
+      const data = doc.data();
+      txData.innerHTML += `
+        <p>ประเภท: ${data.type}</p>
+        <p>จำนวน: ${data.amount} บาท</p>
+        <p>วันที่: ${data.date.toDate()}</p>
+        <hr>
+      `;
     });
-}
+  }
 
-// ฟังก์ชันเพิ่มตัวอย่างธุรกรรม
-function addTestTransaction() {
-    let currentUser = JSON.parse(localStorage.getItem("currentUser") || "{}");
-    if(!currentUser.email){
-        alert("กรุณาเข้าสู่ระบบก่อนเพิ่มธุรกรรม");
-        return;
+  // ====== Logout (ถ้าต้องการ) ======
+  function logout() {
+    auth.signOut().then(() => {
+      currentUser = null;
+      document.getElementById("txData").innerHTML = "";
+      alert("ออกจากระบบเรียบร้อย");
+    });
+  }
+
+  // ====== Auth State Listener ======
+  auth.onAuthStateChanged(user => {
+    currentUser = user;
+    if (user) {
+      showTransactions();
+    } else {
+      document.getElementById("txData").innerHTML = "";
     }
-
-    let tx = {
-        type: "เช่าอุปกรณ์",
-        amount: 150,
-        date: new Date().toLocaleString()
-    };
-    saveTransaction(currentUser.email, tx);
-    showTransaction(currentUser.email);
-    alert("เพิ่มธุรกรรมตัวอย่างเรียบร้อย");
-}
-
-// ฟังก์ชัน Logout (ถ้าต้องการ)
-function logout(){
-    localStorage.removeItem("currentUser");
-    checkUserLogin();
-}
+  });
 </script>
 
 

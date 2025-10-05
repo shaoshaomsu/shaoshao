@@ -1497,48 +1497,6 @@ window.onload = () => {
     }
 };
 
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js";
-  import { getFirestore, collection, addDoc, getDocs } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
-
-  const firebaseConfig = {
-    apiKey: "YOUR_API_KEY",
-    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-    projectId: "YOUR_PROJECT_ID",
-    storageBucket: "YOUR_PROJECT_ID.appspot.com",
-    messagingSenderId: "YOUR_SENDER_ID",
-    appId: "YOUR_APP_ID"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
-
-  async function addRental(item) {
-    await addDoc(collection(db, "rentals"), { name: item });
-    loadRentals();
-  }
-
-  async function loadRentals() {
-    const querySnapshot = await getDocs(collection(db, "rentals"));
-    const listEl = document.getElementById("itemList");
-    if (!listEl) return;
-    listEl.innerHTML = "";
-    querySnapshot.forEach((doc) => {
-      const li = document.createElement("li");
-      li.textContent = doc.data().name;
-      listEl.appendChild(li);
-    });
-  }
-
-  document.getElementById("postBtn")?.addEventListener("click", () => {
-    const item = document.getElementById("itemName").value;
-    if (item.trim() !== "") {
-      addRental(item);
-      document.getElementById("itemName").value = "";
-    }
-  });
-
-  loadRentals();
-
 </script>
 
     <!-- How It Works -->

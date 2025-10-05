@@ -1285,7 +1285,7 @@
 	</section>
 
 
-<script>
+<script type="module">
 document.getElementById("search-input").addEventListener("keyup", function() {
     let filter = this.value.toLowerCase();
     let items = document.querySelectorAll(".product-card"); // ใช้รายการสินค้าแทน .item
@@ -1497,6 +1497,21 @@ window.onload = () => {
     }
 };
 
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js";
+  import { getFirestore } from "https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "YOUR_API_KEY",
+    authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+    projectId: "YOUR_PROJECT_ID",
+    storageBucket: "YOUR_PROJECT_ID.appspot.com",
+    messagingSenderId: "YOUR_SENDER_ID",
+    appId: "YOUR_APP_ID"
+  };
+
+  // เริ่มต้น Firebase และฐานข้อมูล
+  const app = initializeApp(firebaseConfig);
+  window.db = getFirestore(app);
 
 </script>
 

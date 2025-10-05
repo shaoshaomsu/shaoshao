@@ -977,210 +977,183 @@ body { font-family: sans-serif; max-width: 700px; margin: auto; }
 
     </form>
 
+   <script>
+let selectedImages = [];
+let editId = null;
+
+// ฟังก์ชันบีบอัดและย่อขนาดรูป
+function resizeImage(file, maxWidth, maxHeight, callback) {
+    const reader = new FileReader();
+    reader.onload = function(event) {
+        const img = new Image();
+        img.onload = function() {
+            let width = img.width;
+            let height = img.height;
+
+            if (width > maxWidth) {
+                height *= maxWidth / width;
+                width = maxWidth;
+            }
+            if (height > maxHeight) {
+                width *= maxHeight / height;
+                height = maxHeight;
+            }
+
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = width;
+            canvas.height = height;
+
+            ctx.drawImage(img, 0, 0, width, height);
+
+            const resizedBase64 = canvas.toDataURL('image/jpeg', 0.7);
+            callback(resizedBase64);
+        };
+        img.src = event.target.result;
+    };
+    reader.readAsDataURL(file);
+}
+
+// อัปเดต event เลือกรูป
+document.getElementById('photoInput').addEventListener('change', function (e) {
+    const files = Array.from(e.target.files);
+    const previewContainer = document.getElementById('imagePreview');
+
+    files.forEach((file) => {
+        if (selectedImages.length >= 5) {
+            alert("อัปโหลดได้สูงสุด 5 รูป");
+            return;
+        }
+
+        resizeImage(file, 800, 800, function(imgBase64) {
+            selectedImages.push(imgBase64);
+
+            const div = document.createElement('div');
+            div.className = 'preview-item';
+
+            const img = document.createElement('img');
+            img.src = imgBase64;
+            div.appendChild(img);
+
+            const removeBtn = document.createElement('button');
+            removeBtn.type = "button";
+            removeBtn.className = 'remove-btn';
+            removeBtn.innerHTML = "&times;";
+            removeBtn.addEventListener('click', () => {
+                const index = selectedImages.indexOf(imgBase64);
+                if (index !== -1) {
+                    selectedImages.splice(index, 1);
+                }
+                div.remove();
+            });
+
+            div.appendChild(removeBtn);
+            previewContainer.appendChild(div);
+        });
+    });
+
+    e.target.value = '';
+});
+
+// โหลดข้อมูลแก้ไข
+function loadEditData() {
+    const params = new URLSearchParams(window.location.search);
+    if (params.has('edit')) {
+        editId = parseInt(params.get('edit'), 10);
+        const rentals = JSON.parse(localStorage.getItem('rentals') || '[]');
+        const item = rentals.find(r => r.id === editId);
+        if (item) {
+            document.getElementById('deviceName').value = item.deviceName;
+            document.getElementById('category').value = item.category;
+            document.getElementById('usageType').value = item.usageType;
+            document.getElementById('pricePerDay').value = item.pricePerDay;
+            document.getElementById('rentalDays').value = item.rentalDays;
+            document.getElementById('description').value = item.description;
+            document.getElementById('location').value = item.location;
+            document.getElementById('ownerName').value = item.ownerName;
+            document.getElementById('email').value = item.email;
+
+            selectedImages = Array.isArray(item.images) ? [...item.images] : [];
+            const previewContainer = document.getElementById('imagePreview');
+            previewContainer.innerHTML = '';
+            selectedImages.forEach(imgData => {
+                const div = document.createElement('div');
+                div.className = 'preview-item';
+
+                const img = document.createElement('img');
+                img.src = imgData;
+                div.appendChild(img);
+
+                const removeBtn = document.createElement('button');
+                removeBtn.type = "button";
+                removeBtn.className = 'remove-btn';
+                removeBtn.innerHTML = "&times;";
+                removeBtn.addEventListener('click', () => {
+                    const index = selectedImages.indexOf(imgData);
+                    if (index !== -1) {
+                        selectedImages.splice(index, 1);
+                    }
+                    div.remove();
+                });
+
+                div.appendChild(removeBtn);
+                previewContainer.appendChild(div);
+            });
+        }
+    }
+}
+
+// บันทึกข้อมูล
+document.getElementById('rentalForm').addEventListener('submit',function(e){
+    e.preventDefault();
+    const rentals = JSON.parse(localStorage.getItem('rentals') || '[]');
+    const rentalData = {
+        id: editId!==null? editId : Date.now(),
+        deviceName: document.getElementById('deviceName').value,
+        category: document.getElementById('category').value,
+        usageType: document.getElementById('usageType').value,
+        pricePerDay: parseFloat(document.getElementById('pricePerDay').value),
+        rentalDays: parseInt(document.getElementById('rentalDays').value,10),
+        description: document.getElementById('description').value,
+        location: document.getElementById('location').value,
+        ownerName: document.getElementById('ownerName').value,
+        email: document.getElementById('email').value,
+        images: selectedImages ,
+	isPublic: true,
+	createdAt: editId !== null ? (rentals.find(r => r.id === editId)?.createdAt || Date.now()) : Date.now()
+    };
+
+    if(editId!==null){
+        const index=rentals.findIndex(r=>r.id===editId);
+        if(index!==-1) rentals[index]=rentalData;
+        alert("แก้ไขประกาศเรียบร้อยแล้ว");
+    } else {
+        rentals.push(rentalData);
+        alert("บันทึกประกาศเรียบร้อยแล้ว");
+    }
+
+    localStorage.setItem('rentals',JSON.stringify(rentals));
+    window.location.href="p1.html";
+});
+
+window.addEventListener('DOMContentLoaded',loadEditData);
+</script>
 <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
 
     <script>
+        // ⚠️ สำคัญ: ต้องสร้าง Firebase Project และใส่ config ของคุณเอง
+        // ไปที่ https://console.firebase.google.com/
         const firebaseConfig = {
-            apiKey: "AIzaSyC00c9EBgKEczZTsglTumoYNkCdoOeP3-Q",
-            authDomain: "shaoshaomsu-cbed7.firebaseapp.com",
-            databaseURL: "https://shaoshaomsu-cbed7-default-rtdb.asia-southeast1.firebasedatabase.app",
-            projectId: "shaoshaomsu-cbed7",
-            storageBucket: "shaoshaomsu-cbed7.firebasestorage.app",
-            messagingSenderId: "720038869211",
-            appId: "1:720038869211:web:96a2cc128073bdbfc734fe",
-            measurementId: "G-BY4PNZBFYB"
+  apiKey: "AIzaSyC00c9EBgKEczZTsglTumoYNkCdoOeP3-Q",
+  authDomain: "shaoshaomsu-cbed7.firebaseapp.com",
+  databaseURL: "https://shaoshaomsu-cbed7-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "shaoshaomsu-cbed7",
+  storageBucket: "shaoshaomsu-cbed7.firebasestorage.app",
+  messagingSenderId: "720038869211",
+  appId: "1:720038869211:web:96a2cc128073bdbfc734fe",
+  measurementId: "G-BY4PNZBFYB"
         };
-
-        // Initialize Firebase
-        firebase.initializeApp(firebaseConfig);
-        const database = firebase.database();
-
-        let selectedImages = [];
-        let editKey = null;
-
-        // ฟังก์ชันบีบอัดและย่อขนาดรูป
-        function resizeImage(file, maxWidth, maxHeight, callback) {
-            const reader = new FileReader();
-            reader.onload = function(event) {
-                const img = new Image();
-                img.onload = function() {
-                    let width = img.width;
-                    let height = img.height;
-
-                    if (width > maxWidth) {
-                        height *= maxWidth / width;
-                        width = maxWidth;
-                    }
-                    if (height > maxHeight) {
-                        width *= maxHeight / height;
-                        height = maxHeight;
-                    }
-
-                    const canvas = document.createElement('canvas');
-                    const ctx = canvas.getContext('2d');
-                    canvas.width = width;
-                    canvas.height = height;
-
-                    ctx.drawImage(img, 0, 0, width, height);
-
-                    const resizedBase64 = canvas.toDataURL('image/jpeg', 0.7);
-                    callback(resizedBase64);
-                };
-                img.src = event.target.result;
-            };
-            reader.readAsDataURL(file);
-        }
-
-        // อัปเดต event เลือกรูป
-        document.getElementById('photoInput').addEventListener('change', function (e) {
-            const files = Array.from(e.target.files);
-            const previewContainer = document.getElementById('imagePreview');
-
-            files.forEach((file) => {
-                if (selectedImages.length >= 5) {
-                    alert("อัปโหลดได้สูงสุด 5 รูป");
-                    return;
-                }
-
-                resizeImage(file, 800, 800, function(imgBase64) {
-                    selectedImages.push(imgBase64);
-
-                    const div = document.createElement('div');
-                    div.className = 'preview-item';
-
-                    const img = document.createElement('img');
-                    img.src = imgBase64;
-                    div.appendChild(img);
-
-                    const removeBtn = document.createElement('button');
-                    removeBtn.type = "button";
-                    removeBtn.className = 'remove-btn';
-                    removeBtn.innerHTML = "&times;";
-                    removeBtn.addEventListener('click', () => {
-                        const index = selectedImages.indexOf(imgBase64);
-                        if (index !== -1) {
-                            selectedImages.splice(index, 1);
-                        }
-                        div.remove();
-                    });
-
-                    div.appendChild(removeBtn);
-                    previewContainer.appendChild(div);
-                });
-            });
-
-            e.target.value = '';
-        });
-
-        // โหลดข้อมูลแก้ไข
-        function loadEditData() {
-            const params = new URLSearchParams(window.location.search);
-            if (params.has('edit')) {
-                editKey = params.get('edit');
-                
-                database.ref('rentals/' + editKey).once('value', (snapshot) => {
-                    const item = snapshot.val();
-                    if (item) {
-                        document.getElementById('deviceName').value = item.deviceName;
-                        document.getElementById('category').value = item.category;
-                        document.getElementById('usageType').value = item.usageType;
-                        document.getElementById('pricePerDay').value = item.pricePerDay;
-                        document.getElementById('rentalDays').value = item.rentalDays;
-                        document.getElementById('description').value = item.description;
-                        document.getElementById('location').value = item.location;
-                        document.getElementById('ownerName').value = item.ownerName;
-                        document.getElementById('email').value = item.email;
-
-                        selectedImages = Array.isArray(item.images) ? [...item.images] : [];
-                        const previewContainer = document.getElementById('imagePreview');
-                        previewContainer.innerHTML = '';
-                        selectedImages.forEach(imgData => {
-                            const div = document.createElement('div');
-                            div.className = 'preview-item';
-
-                            const img = document.createElement('img');
-                            img.src = imgData;
-                            div.appendChild(img);
-
-                            const removeBtn = document.createElement('button');
-                            removeBtn.type = "button";
-                            removeBtn.className = 'remove-btn';
-                            removeBtn.innerHTML = "&times;";
-                            removeBtn.addEventListener('click', () => {
-                                const index = selectedImages.indexOf(imgData);
-                                if (index !== -1) {
-                                    selectedImages.splice(index, 1);
-                                }
-                                div.remove();
-                            });
-
-                            div.appendChild(removeBtn);
-                            previewContainer.appendChild(div);
-                        });
-
-                        document.getElementById('submitBtn').textContent = 'แก้ไขประกาศ';
-                    }
-                });
-            }
-        }
-
-        // บันทึกข้อมูลลง Firebase
-        document.getElementById('rentalForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const submitBtn = document.getElementById('submitBtn');
-            const loadingOverlay = document.getElementById('loadingOverlay');
-            
-            submitBtn.disabled = true;
-            loadingOverlay.classList.add('show');
-
-            const rentalData = {
-                deviceName: document.getElementById('deviceName').value,
-                category: document.getElementById('category').value,
-                usageType: document.getElementById('usageType').value,
-                pricePerDay: parseFloat(document.getElementById('pricePerDay').value),
-                rentalDays: parseInt(document.getElementById('rentalDays').value, 10),
-                description: document.getElementById('description').value,
-                location: document.getElementById('location').value,
-                ownerName: document.getElementById('ownerName').value,
-                email: document.getElementById('email').value,
-                images: selectedImages,
-                isPublic: true,
-                updatedAt: Date.now()
-            };
-
-            if (editKey) {
-                // แก้ไขข้อมูล
-                database.ref('rentals/' + editKey).update(rentalData)
-                    .then(() => {
-                        alert("แก้ไขประกาศเรียบร้อยแล้ว");
-                        window.location.href = "p1.html";
-                    })
-                    .catch((error) => {
-                        console.error("Error updating data:", error);
-                        alert("เกิดข้อผิดพลาด: " + error.message);
-                        submitBtn.disabled = false;
-                        loadingOverlay.classList.remove('show');
-                    });
-            } else {
-                // เพิ่มข้อมูลใหม่
-                rentalData.createdAt = Date.now();
-                database.ref('rentals').push(rentalData)
-                    .then(() => {
-                        alert("บันทึกประกาศเรียบร้อยแล้ว");
-                        window.location.href = "p1.html";
-                    })
-                    .catch((error) => {
-                        console.error("Error saving data:", error);
-                        alert("เกิดข้อผิดพลาด: " + error.message);
-                        submitBtn.disabled = false;
-                        loadingOverlay.classList.remove('show');
-                    });
-            }
-        });
-
-        window.addEventListener('DOMContentLoaded', loadEditData);
-    </script>
+	</script>
 </body>
 </html>

@@ -1119,6 +1119,8 @@ document.getElementById('rentalForm').addEventListener('submit',function(e){
         ownerName: document.getElementById('ownerName').value,
         email: document.getElementById('email').value,
         images: selectedImages
+        isPublic: true,  // เพิ่มสถานะสาธารณะ
+        createdAt: editId!==null ? (rentals.find(r=>r.id===editId)?.createdAt || Date.now()) : Date.now()  // บันทึกเวลาที่สร้าง
     };
 
     if(editId!==null){

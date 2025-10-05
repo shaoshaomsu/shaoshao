@@ -1618,6 +1618,117 @@ window.onload = () => {
         }
     </script>
 
+<script>
+// อ้างอิงปุ่มและส่วนของ UI
+const authBtn = document.getElementById("authBtn"); // ปุ่ม login/register
+const txSection = document.getElementById("transactionSection"); // ส่วน transaction
+const modal = document.getElementById("authModal"); // modal login/register
+
+// ฟังก์ชันตรวจสอบผู้ใช้ล็อกอิน
+function checkUserLogin() {
+    let currentUser = JSON.parse(localStorage.getItem("currentUser") || "null");
+    if(currentUser){
+        authBtn.style.display = "none"; // ซ่อนปุ่ม login/register
+        txSection.style.display = "block"; // แสดง transaction
+        showTransaction(currentUser.email); // แสดงธุรกรรมของผู้ใช้
+        let profileIcon = document.getElementById("headerProfileIcon");
+        if(profileIcon) profileIcon.title = currentUser.username; // แสดงชื่อผู้ใช้
+    } else {
+        authBtn.style.display = "inline-block";
+        txSection.style.display = "none";
+    }
+}
+
+// เรียกตอนโหลดเพจ
+checkUserLogin();
+
+// ฟังก์ชัน Login
+document.getElementById("login-btn").addEventListener("click", () => {
+    let email = document.getElementById("login-Email").value;
+    let password = document.getElementById("login-password").value;
+
+    let users = JSON.parse(localStorage.getItem("users") || "[]");
+    let user = users.find(u => u.email === email && u.password === password);
+
+    if(user){
+        localStorage.setItem("currentUser", JSON.stringify(user));
+        alert("เข้าสู่ระบบเรียบร้อย!");
+        modal.style.display = "none";
+        checkUserLogin(); // อัปเดต UI
+    } else {
+        alert("อีเมลหรือรหัสผ่านไม่ถูกต้อง");
+    }
+});
+
+// ฟังก์ชัน Register
+document.getElementById("register-btn").addEventListener("click", () => {
+    let username = document.getElementById("reg-username").value;
+    let email = document.getElementById("reg-email").value;
+    let phone = document.getElementById("reg-phone").value;
+    let password = document.getElementById("reg-password").value;
+
+    let users = JSON.parse(localStorage.getItem("users") || "[]");
+
+    if(users.some(u => u.email === email)){
+        alert("อีเมลนี้มีผู้ใช้งานแล้ว");
+        return;
+    }
+
+    let newUser = { username, email, phone, password };
+    users.push(newUser);
+    localStorage.setItem("users", JSON.stringify(users));
+    localStorage.setItem("currentUser", JSON.stringify(newUser));
+    alert("สมัครสมาชิกเรียบร้อย!");
+    modal.style.display = "none";
+    checkUserLogin(); // อัปเดต UI
+});
+
+// ฟังก์ชันเพิ่มธุรกรรม
+function saveTransaction(email, tx){
+    let allTx = JSON.parse(localStorage.getItem("transactions") || "{}");
+    if(!allTx[email]) allTx[email] = [];
+    allTx[email].push(tx);
+    localStorage.setItem("transactions", JSON.stringify(allTx));
+}
+
+// แสดงธุรกรรมของผู้ใช้
+function showTransaction(email){
+    let txList = document.getElementById("txList");
+    txList.innerHTML = "";
+    let allTx = JSON.parse(localStorage.getItem("transactions") || "{}");
+    let userTx = allTx[email] || [];
+    userTx.forEach(t => {
+        let li = document.createElement("li");
+        li.textContent = `${t.date} - ${t.type} - ${t.amount} บาท`;
+        txList.appendChild(li);
+    });
+}
+
+// ฟังก์ชันเพิ่มตัวอย่างธุรกรรม
+function addTestTransaction() {
+    let currentUser = JSON.parse(localStorage.getItem("currentUser") || "{}");
+    if(!currentUser.email){
+        alert("กรุณาเข้าสู่ระบบก่อนเพิ่มธุรกรรม");
+        return;
+    }
+
+    let tx = {
+        type: "เช่าอุปกรณ์",
+        amount: 150,
+        date: new Date().toLocaleString()
+    };
+    saveTransaction(currentUser.email, tx);
+    showTransaction(currentUser.email);
+    alert("เพิ่มธุรกรรมตัวอย่างเรียบร้อย");
+}
+
+// ฟังก์ชัน Logout (ถ้าต้องการ)
+function logout(){
+    localStorage.removeItem("currentUser");
+    checkUserLogin();
+}
+</script>
+
 
     <!-- How It Works -->
     <section class="how-it-works">

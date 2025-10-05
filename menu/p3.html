@@ -1107,22 +1107,21 @@ function loadEditData() {
 document.getElementById('rentalForm').addEventListener('submit',function(e){
     e.preventDefault();
     const rentals = JSON.parse(localStorage.getItem('rentals') || '[]');
-    const rentalData = {
-        id: editId!==null? editId : Date.now(),
-        deviceName: document.getElementById('deviceName').value,
-        category: document.getElementById('category').value,
-        usageType: document.getElementById('usageType').value,
-        pricePerDay: parseFloat(document.getElementById('pricePerDay').value),
-        rentalDays: parseInt(document.getElementById('rentalDays').value,10),
-        description: document.getElementById('description').value,
-        location: document.getElementById('location').value,
-        ownerName: document.getElementById('ownerName').value,
-        email: document.getElementById('email').value,
-        images: selectedImages
-        isPublic: true,  // เพิ่มสถานะสาธารณะ
-        createdAt: editId!==null ? (rentals.find(r=>r.id===editId)?.createdAt || Date.now()) : Date.now()  // บันทึกเวลาที่สร้าง
-    };
-
+const rentalData = {
+    id: editId!==null? editId : Date.now(),
+    deviceName: document.getElementById('deviceName').value,
+    category: document.getElementById('category').value,
+    usageType: document.getElementById('usageType').value,
+    pricePerDay: parseFloat(document.getElementById('pricePerDay').value),
+    rentalDays: parseInt(document.getElementById('rentalDays').value,10),
+    description: document.getElementById('description').value,
+    location: document.getElementById('location').value,
+    ownerName: document.getElementById('ownerName').value,
+    email: document.getElementById('email').value,
+    images: selectedImages,
+    isPublic: true,  // ← บรรทัดใหม่ที่เพิ่ม
+    createdAt: editId!==null ? (rentals.find(r=>r.id===editId)?.createdAt || Date.now()) : Date.now()  // ← บรรทัดใหม่ที่เพิ่ม
+};
     if(editId!==null){
         const index=rentals.findIndex(r=>r.id===editId);
         if(index!==-1) rentals[index]=rentalData;

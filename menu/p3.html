@@ -1118,7 +1118,9 @@ document.getElementById('rentalForm').addEventListener('submit',function(e){
         location: document.getElementById('location').value,
         ownerName: document.getElementById('ownerName').value,
         email: document.getElementById('email').value,
-        images: selectedImages
+        images: selectedImages ,
+	isPublic: true,
+	createdAt: editId !== null ? (rentals.find(r => r.id === editId)?.createdAt || Date.now()) : Date.now()
     };
 
     if(editId!==null){

@@ -1570,5 +1570,112 @@ window.onload = () => {
     <p>&copy; 2024 Shao Shao MSU</p>
 </div>
 </footer>
+
+<!-- Firebase App (core) -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+<!-- Firebase Auth -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-auth-compat.js"></script>
+<!-- Firebase Firestore -->
+<script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
+
+    <script>
+        // ================= Firebase Config =================
+        const firebaseConfig = {
+            apiKey: "API_KEY_HERE",
+            authDomain: "PROJECT_ID.firebaseapp.com",
+            projectId: "PROJECT_ID",
+            storageBucket: "PROJECT_ID.appspot.com",
+            messagingSenderId: "SENDER_ID",
+            appId: "APP_ID"
+        };
+        firebase.initializeApp(firebaseConfig);
+
+        const auth = firebase.auth();
+        const db = firebase.firestore();
+
+        // ================= Register =================
+        document.getElementById("register-btn").addEventListener("click", async () => {
+            const email = document.getElementById("reg-email").value;
+            const password = document.getElementById("reg-password").value;
+            const username = document.getElementById("reg-username").value;
+
+            try {
+                const userCredential = await auth.createUserWithEmailAndPassword(email, password);
+                const uid = userCredential.user.uid;
+
+                await db.collection("users").doc(uid).set({
+                    username: username,
+                    email: email,
+                    createdAt: new Date()
+                });
+                alert("สมัครสมาชิกสำเร็จ");
+            } catch (error) {
+                alert(error.message);
+            }
+        });
+
+        // ================= Login =================
+        let currentUser = null;
+        document.getElementById("login-btn").addEventListener("click", async () => {
+            const email = document.getElementById("login-email").value;
+            const password = document.getElementById("login-password").value;
+
+            try {
+                const userCredential = await auth.signInWithEmailAndPassword(email, password);
+                currentUser = userCredential.user;
+                alert("เข้าสู่ระบบสำเร็จ: " + currentUser.email);
+                showTransactions();
+            } catch (error) {
+                alert(error.message);
+            }
+        });
+
+        // ================= Transaction =================
+        document.getElementById("add-tx-btn").addEventListener("click", async () => {
+            if (!currentUser) {
+                alert("กรุณาเข้าสู่ระบบก่อน");
+                return;
+            }
+
+            const type = document.getElementById("tx-type").value;
+            const amount = document.getElementById("tx-amount").value;
+
+            try {
+                await db.collection("transactions").add({
+                    uid: currentUser.uid,
+                    type: type,
+                    amount: amount,
+                    date: new Date()
+                });
+                alert("เพิ่มธุรกรรมเรียบร้อย");
+                showTransactions();
+            } catch (error) {
+                alert(error.message);
+            }
+        });
+
+        async function showTransactions() {
+            if (!currentUser) return;
+            const snapshot = await db.collection("transactions")
+                                     .where("uid", "==", currentUser.uid)
+                                     .orderBy("date", "desc")
+                                     .get();
+            const txData = document.getElementById("txData");
+            txData.innerHTML = "";
+            if (snapshot.empty) {
+                txData.innerHTML = "ไม่มีข้อมูลธุรกรรม";
+                return;
+            }
+            snapshot.forEach(doc => {
+                const data = doc.data();
+                txData.innerHTML += `
+                    <p>ประเภท: ${data.type}</p>
+                    <p>จำนวน: ${data.amount}</p>
+                    <p>วันที่: ${data.date.toDate()}</p>
+                    <hr>
+                `;
+            });
+        }
+    </script>
 </body>
 </html>

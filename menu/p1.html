@@ -170,31 +170,56 @@
   <img id="modalImage" src="" alt="">
 </div>
 
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+
 <script>
+const firebaseConfig = {
+  apiKey: "AIzaSyC00c9EBgKEczZTsglTumoYNkCdoOeP3-Q",
+  authDomain: "shaoshaomsu-cbed7.firebaseapp.com",
+  databaseURL: "https://shaoshaomsu-cbed7-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "shaoshaomsu-cbed7",
+  storageBucket: "shaoshaomsu-cbed7.firebasestorage.app",
+  messagingSenderId: "720038869211",
+  appId: "1:720038869211:web:96a2cc128073bdbfc734fe",
+  measurementId: "G-BY4PNZBFYB"
+};
+
+// Initialize Firebase
+firebase.initializeApp(firebaseConfig);
+const database = firebase.database();
+
 let rentals = [];
 let currentCategory = 'ทั้งหมด';
 let currentUsage = 'all';
 
-// โหลดข้อมูลจาก localStorage
+// โหลดข้อมูลจาก Firebase Realtime Database
 function loadRentals() {
-  console.log('Loading rentals from localStorage...');
-  try {
-    const data = localStorage.getItem('rentals');
-    console.log('Raw data:', data);
+  console.log('Loading rentals from Firebase...');
+  const container = document.getElementById('productList');
+  container.innerHTML = '<div class="loading">กำลังโหลดข้อมูล...</div>';
+
+  database.ref('rentals').on('value', (snapshot) => {
+    rentals = [];
+    const data = snapshot.val();
     
     if (data) {
-      rentals = JSON.parse(data);
-      console.log('Parsed rentals:', rentals);
+      Object.keys(data).forEach(key => {
+        rentals.push({
+          firebaseKey: key,
+          ...data[key]
+        });
+      });
+      console.log('Loaded rentals:', rentals.length);
     } else {
-      rentals = [];
       console.log('No data found');
     }
-  } catch (error) {
-    console.error('Error loading rentals:', error);
-    rentals = [];
-  }
-  
-  renderProducts();
+    
+    renderProducts();
+  }, (error) => {
+    console.error('Error loading data:', error);
+    container.innerHTML = '<div class="no-data"><h3>เกิดข้อผิดพลาดในการโหลดข้อมูล</h3><p>กรุณาลองใหม่อีกครั้ง</p></div>';
+  });
 }
 
 function renderProducts() {
@@ -203,7 +228,7 @@ function renderProducts() {
   const container = document.getElementById('productList');
   container.innerHTML = '';
 
-  let filtered = [...rentals]; // สร้าง copy ของ array
+  let filtered = [...rentals];
   
   if (currentCategory !== 'ทั้งหมด') {
     filtered = filtered.filter(r => r.category === currentCategory);
@@ -239,7 +264,6 @@ function renderProducts() {
     div.className = 'product-card';
     div.setAttribute('data-category', item.category);
     
-    // สร้าง image gallery
     let imageGallery = '';
     if (item.images && item.images.length > 1) {
       imageGallery = `
@@ -268,7 +292,7 @@ function renderProducts() {
       <div class="product-description">${item.description || 'ไม่มีรายละเอียด'}</div>
       
       <div class="product-actions">
-        <button class="product-btn" onclick="viewDetails(${item.id})">
+        <button class="product-btn" onclick="viewDetails('${item.firebaseKey}')">
           ดูรายละเอียด
         </button>
       </div>
@@ -285,10 +309,8 @@ function selectCategory(category, element) {
 }
 
 function selectUsage(usage, element) {
-  // ลบ selected class จากทุก card
   document.querySelectorAll('.filter-cards .card').forEach(card => card.classList.remove('selected'));
   
-  // ถ้าเลือก usage เดิมอีกครั้ง ให้เคลียร์ filter
   if (currentUsage === usage) {
     currentUsage = 'all';
   } else {
@@ -299,20 +321,10 @@ function selectUsage(usage, element) {
   renderProducts();
 }
 
-// ดูรายละเอียด
-function viewDetails(id) {
-  // หาข้อมูลสินค้าจาก id
-  const item = rentals.find(r => r.id === id);
-  if (!item) {
-    alert('ไม่พบข้อมูลสินค้า');
-    return;
-  }
-  
-  // นำไปยังหน้ารายละเอียด (ต้องสร้างไฟล์ detail.html)
-  window.location.href = `detail.html?id=${id}`;
+function viewDetails(firebaseKey) {
+  window.location.href = `detail.html?key=${firebaseKey}`;
 }
 
-// แสดงรูปภาพขยาย
 function showImageModal(imageSrc) {
   const modal = document.getElementById('imageModal');
   const modalImage = document.getElementById('modalImage');
@@ -320,55 +332,16 @@ function showImageModal(imageSrc) {
   modal.classList.add('show');
 }
 
-// ปิด modal รูปภาพ
 function closeImageModal() {
   const modal = document.getElementById('imageModal');
   modal.classList.remove('show');
 }
 
-// Event Listeners
+// เริ่มโหลดข้อมูลเมื่อหน้าเว็บพร้อม
 window.addEventListener('DOMContentLoaded', function() {
-  console.log('Page loaded, loading rentals...');
+  console.log('Page loaded, initializing Firebase...');
   loadRentals();
 });
-
-// โหลดข้อมูลใหม่เมื่อกลับมาที่หน้านี้
-window.addEventListener('focus', function() {
-  console.log('Page focused, reloading rentals...');
-  loadRentals();
-});
-
-// โหลดข้อมูลใหม่เมื่อ localStorage มีการเปลี่ยนแปลง
-window.addEventListener('storage', function(e) {
-  if (e.key === 'rentals') {
-    console.log('Storage changed, reloading rentals...');
-    loadRentals();
-  }
-});
-
-// รีเฟรชข้อมูลทุก 30 วินาที (เพื่อให้แน่ใจว่าข้อมูลใหม่ล่าสุด)
-setInterval(function() {
-  console.log('Auto refresh...');
-  loadRentals();
-}, 30000);
-
 </script>
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
-
-    <script>
-        //⚠️ สำคัญ: ต้องสร้าง Firebase Project และใส่ config ของคุณเอง
-        // ไปที่ https://console.firebase.google.com/
-        const firebaseConfig = {
-  apiKey: "AIzaSyC00c9EBgKEczZTsglTumoYNkCdoOeP3-Q",
-  authDomain: "shaoshaomsu-cbed7.firebaseapp.com",
-  databaseURL: "https://shaoshaomsu-cbed7-default-rtdb.asia-southeast1.firebasedatabase.app",
-  projectId: "shaoshaomsu-cbed7",
-  storageBucket: "shaoshaomsu-cbed7.firebasestorage.app",
-  messagingSenderId: "720038869211",
-  appId: "1:720038869211:web:96a2cc128073bdbfc734fe",
-  measurementId: "G-BY4PNZBFYB
-        };
-	</script>
 </body>
 </html>
